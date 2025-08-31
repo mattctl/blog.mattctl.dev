@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="512" height="512" viewBox="0 0 512 512">
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#000000" rx="100" ry="100"/>
+
+  <!-- Green border -->
+  <rect x="24" y="24" width="464" height="464"
+        fill="none" stroke="#1cbb52" stroke-width="32" rx="80" ry="80"/>
+
+  <!-- Text -->
+  <text x="50%" y="50%"
+        font-family="monospace"
+        font-weight="bold"
+        font-size="260"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        alignment-baseline="middle"
+        fill="#1cbb52">
+    m$
+  </text>
+</svg>
