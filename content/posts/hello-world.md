@@ -15,7 +15,7 @@ This post was automatically deployed to my blog. All I had to do was write some 
 
 I am using the static site generator [hugo](https://gohugo.io) with the [hugo-coder](https://github.com/luizdepra/hugo-coder) theme. This means I can focus on writing / deploying my blog without worrying about CSS and JavaScript. 
 
-This blog is defined in a git [repo](https://github.com/mattctl/blog.mattctl.dev-private) and deployed on Kubernetes with manifests in my (private) gitops/infra repo. I'll share the relevant snippets inline here.
+This blog is defined in a git [repo](https://github.com/mattctl/blog.mattctl.dev) and deployed on Kubernetes with manifests in my (private) gitops/infra repo. I'll share the relevant snippets inline here.
 
 Here's how it all fits together:
 
@@ -64,7 +64,7 @@ steps:
 ...
 ```
 
-If you want, compare the raw [markdown](https://github.com/mattctl/blog.mattctl.dev-private/blob/main/content/posts/hello-world.md) for this post, and the resulting [branch](https://github.com/mattctl/blog.mattctl.dev-private/tree/live).
+If you want, compare the raw [markdown](https://github.com/mattctl/blog.mattctl.dev/blob/main/content/posts/hello-world.md) for this post, and the resulting [branch](https://github.com/mattctl/blog.mattctl.dev/tree/live).
 
 To serve up the site, I use nginx running in my Homelab Kubernetes cluster.
 
@@ -137,7 +137,7 @@ data:
       listen 80;
       server_name blog.mattctl.dev;
 
-      root /data/blog.mattctl.dev-private.git/public;
+      root /data/blog.mattctl.dev.git/public;
       index index.html;
 
     location / {
@@ -149,7 +149,7 @@ data:
 
 ```
 
-"But how does the blog content end up in the expected location of /data/blog.mattctl.dev-private.git/public?" my eagle-eyed readers will be asking at this point.
+"But how does the blog content end up in the expected location of /data/blog.mattctl.dev.git/public?" my eagle-eyed readers will be asking at this point.
 
 To keep the contents of the `www-data` volume up to date, I use [git-sync](https://github.com/kubernetes/git-sync), "a simple command that pulls a git repository into a local directory, waits for a while, then repeats". Running it as a sidecar just requires adding this snippet to my deployment:
 
@@ -169,7 +169,7 @@ To keep the contents of the `www-data` volume up to date, I use [git-sync](https
             mountPath: /data
         env:
           - name: GIT_SYNC_REPO
-            value: https://github.com/mattctl/blog.mattctl.dev-private.git
+            value: https://github.com/mattctl/blog.mattctl.dev.git
           - name: GIT_SYNC_BRANCH
             value: live
           - name: GIT_SYNC_ROOT
@@ -211,4 +211,4 @@ I have deliberately glossed over how I expose the nginx service to the internet,
 
 Hosting this on Kubernetes means there's a whole ecosystem of observability tools I can wire up and experiment with. I should be able to spin up a nice dashboard with some metrics for this blog.
 
-If you've set up something similar or see a better way to do this, let me know on [GitHub](https://github.com/mattctl/blog.mattctl.dev-private)
+If you've set up something similar or see a better way to do this, let me know on [GitHub](https://github.com/mattctl/blog.mattctl.dev)
