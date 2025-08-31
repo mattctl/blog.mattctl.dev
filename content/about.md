@@ -14,4 +14,4 @@ This blog is where I document my projects, things I have been learning about and
 
 When I'm not fixing YAML indentations, I can often be found cycling, running or enjoying a cup of coffee.
 
-If you'd like to get in touch you can find me on [GitHub](github.com/mattctl).
+If you'd like to get in touch you can find me on [GitHub](https://github.com/mattctl).
