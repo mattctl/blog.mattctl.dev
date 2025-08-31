@@ -2,7 +2,7 @@
 draft = false
 date = 2025-08-28T20:42:24Z
 title = "Hello World | Hosting this Blog on Kubernetes"
-description = "Hi"
+description = "GitOps approach to hosting a hugo static site on Kubernetes"
 slug = "hello-world"
 
 externalLink = ""
