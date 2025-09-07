@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on mattctl</title>
+    <link>https://blog.mattctl.dev/posts/</link>
+    <description>Recent content in Posts on mattctl</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Sun, 07 Sep 2025 13:47:00 +0000</lastBuildDate>
+    <atom:link href="https://blog.mattctl.dev/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Exposing Kubernetes Services Securely with Cloudflare Tunnels</title>
+      <link>https://blog.mattctl.dev/posts/cloudflare-tunnels-k8s/</link>
+      <pubDate>Sun, 07 Sep 2025 13:47:00 +0000</pubDate>
+      <guid>https://blog.mattctl.dev/posts/cloudflare-tunnels-k8s/</guid>
+      <description>&lt;p&gt;In my &lt;a href=&#34;../hello-world&#34; &gt;last post&lt;/a&gt;, I deliberately skipped over how I use Cloudflare Tunnels to expose this blog running on Kubernetes to the internet.&lt;/p&gt;&#xA;&lt;p&gt;As promised, let&amp;rsquo;s have a look at how this works.&lt;/p&gt;&#xA;&lt;h1 id=&#34;exposing-a-server-to-the-internet&#34;&gt;&#xA;  Exposing a server to the internet&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#exposing-a-server-to-the-internet&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h1&gt;&#xA;&lt;p&gt;Cloudflare Tunnels are an offering from Cloudflare which lets you expose webservers to the internet without opening any firewall ports, or even revealing your IP address.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Hello World | Hosting this Blog on Kubernetes</title>
+      <link>https://blog.mattctl.dev/posts/hello-world/</link>
+      <pubDate>Thu, 28 Aug 2025 20:42:24 +0000</pubDate>
+      <guid>https://blog.mattctl.dev/posts/hello-world/</guid>
+      <description>&lt;p&gt;This post was automatically deployed to my blog. All I had to do was write some markdown and commit.&lt;/p&gt;&#xA;&lt;h2 id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#overview&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;I am using the static site generator &lt;a href=&#34;https://gohugo.io&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;hugo&lt;/a&gt; with the &lt;a href=&#34;https://github.com/luizdepra/hugo-coder&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;hugo-coder&lt;/a&gt; theme. This means I can focus on writing / deploying my blog without worrying about CSS and JavaScript.&lt;/p&gt;&#xA;&lt;p&gt;This blog is defined in a git &lt;a href=&#34;https://github.com/mattctl/blog.mattctl.dev&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;repo&lt;/a&gt; and deployed on Kubernetes with manifests in my (private) gitops/infra repo. I&amp;rsquo;ll share the relevant snippets inline here.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

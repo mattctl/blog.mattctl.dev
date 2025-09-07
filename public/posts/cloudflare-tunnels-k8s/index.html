@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>
+  Exposing Kubernetes Services Securely with Cloudflare Tunnels · mattctl
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="mattctl">
+<meta name="description" content="How to securely expose a Kubernetes Service to the internet with Cloudflare Tunnels">
+<meta name="keywords" content="blog,developer,personal">
+
+
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Exposing Kubernetes Services Securely with Cloudflare Tunnels">
+  <meta name="twitter:description" content="How to securely expose a Kubernetes Service to the internet with Cloudflare Tunnels">
+
+<meta property="og:url" content="https://blog.mattctl.dev/posts/cloudflare-tunnels-k8s/">
+  <meta property="og:site_name" content="mattctl">
+  <meta property="og:title" content="Exposing Kubernetes Services Securely with Cloudflare Tunnels">
+  <meta property="og:description" content="How to securely expose a Kubernetes Service to the internet with Cloudflare Tunnels">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-09-07T13:47:00+00:00">
+    <meta property="article:modified_time" content="2025-09-07T13:47:00+00:00">
+
+
+
+
+<link rel="canonical" href="https://blog.mattctl.dev/posts/cloudflare-tunnels-k8s/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.min.ebdf1a5dca6a69142e979b32668c69f2a95448b145a168104c5808b14d2b75b0.css" integrity="sha256-698aXcpqaRQul5syZoxp8qlUSLFFoWgQTFgIsU0rdbA=" crossorigin="anonymous" media="screen" />
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css" integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin="anonymous" media="screen" />
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="https://blog.mattctl.dev/">
+      mattctl
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/about/">About Me</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/projects/">Projects</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="https://blog.mattctl.dev/posts/cloudflare-tunnels-k8s/">
+              Exposing Kubernetes Services Securely with Cloudflare Tunnels
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2025-09-07T13:47:00Z">
+                September 7, 2025
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              8-minute read
+            </span>
+          </div>
+          
+          
+          
+        </div>
+      </header>
+
+      <div class="post-content">
+        
+        <p>In my <a href="../hello-world" >last post</a>, I deliberately skipped over how I use Cloudflare Tunnels to expose this blog running on Kubernetes to the internet.</p>
+<p>As promised, let&rsquo;s have a look at how this works.</p>
+<h1 id="exposing-a-server-to-the-internet">
+  Exposing a server to the internet
+  <a class="heading-link" href="#exposing-a-server-to-the-internet">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h1>
+<p>Cloudflare Tunnels are an offering from Cloudflare which lets you expose webservers to the internet without opening any firewall ports, or even revealing your IP address.</p>
+<p>This can feel a little bit like magic, so let&rsquo;s get warmed up by having a look at a more hands-on way of achieving the same thing.</p>
+<h2 id="the-diy-option-ssh-port-forwarding">
+  The DIY option: ssh port-forwarding
+  <a class="heading-link" href="#the-diy-option-ssh-port-forwarding">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>Let&rsquo;s imagine:</p>
+<ul>
+<li>We have a webserver running locally on 10.1.2.3.</li>
+<li>We don&rsquo;t want to open a port on our router to forward traffic to the webserver</li>
+<li>Our ISP uses Carrier Grade NAT (CGNAT) so our router doesn&rsquo;t have a publicly routable IP anyway.</li>
+<li>We have a host on the internet (perhaps a VPS with a hosting provider) with a publicly routable IP w.x.y.z.</li>
+</ul>
+<p>With ssh port-forwarding, we can expose a service running on a <code>local_ip</code> and <code>local_port</code> on <code>remote_bind_ip</code> and <code>remote_port</code> on the host, vps, as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ssh -R <span style="color:#ff7b72;font-weight:bold">[</span>remote_bind_ip<span style="color:#ff7b72;font-weight:bold">]</span>:<span style="color:#ff7b72;font-weight:bold">[</span>remote_port<span style="color:#ff7b72;font-weight:bold">]</span>:<span style="color:#ff7b72;font-weight:bold">[</span>local_ip<span style="color:#ff7b72;font-weight:bold">]</span>:<span style="color:#ff7b72;font-weight:bold">[</span>local_port<span style="color:#ff7b72;font-weight:bold">]</span> user@vps -N -f
+</span></span></code></pre></div><p>Specifically in our case:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ssh -R w.x.y.z:80:10.1.2.3:80 user@w.x.y.z -N -f
+</span></span></code></pre></div><pre tabindex="0"><code>+------------------+                   +------------------+
+|      Local       | ====ssh-tunnel====|       VPS        |
+|   10.1.2.3:80    | ==================|    w.x.y.z:80    |
++------------------+                   +------------------+
+</code></pre><p>Now people can navigate to <a href="http://w.x.y.z"  class="external-link" target="_blank" rel="noopener">http://w.x.y.z</a> and their request will be transparently routed to the webserver down an ssh tunnel.</p>
+<p>Great! Or is it? There are some things we haven&rsquo;t considered.</p>
+<h3 id="consideration-1---tunnels-die">
+  Consideration #1 - Tunnels die
+  <a class="heading-link" href="#consideration-1---tunnels-die">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>An ssh session is just a TCP connection. There is no built in reconnect when the tunnel dies.</p>
+<p>To make this a reliable way of exposing our server we&rsquo;d need to find a way to restart failed tunnels. We could write a script to do this, or we could let someone else do the hard work (see <a href="https://linux.die.net/man/1/autossh"  class="external-link" target="_blank" rel="noopener">autossh</a>).</p>
+<h3 id="consideration-2---dns">
+  Consideration #2 - DNS
+  <a class="heading-link" href="#consideration-2---dns">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>We can&rsquo;t be giving our raw IP addresses to users. They&rsquo;re scary. So we still need to create a DNS record to point blog.mattctl.dev at w.x.y.z.</p>
+<h3 id="consideration-3---https">
+  Consideration #3 - HTTPS
+  <a class="heading-link" href="#consideration-3---https">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>TLS is pretty much non-negotiable. We need a certificate for our site. And to rotate it when it expired.</p>
+<h3 id="consideration-4---ddos">
+  Consideration #4 - DDoS
+  <a class="heading-link" href="#consideration-4---ddos">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>What happens if someone uses bots to flood our site with traffic. Will my connection cope? Will the VPS cope? Will my partner start complaining Netflix has stopped working?</p>
+<h3 id="consideration-5---complexity">
+  Consideration #5 - Complexity
+  <a class="heading-link" href="#consideration-5---complexity">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Will I manage to set all of this up? How will I document it? Will I be able to quickly make changes without having to re-understand a complex setup? Am I perhaps re-inventing the wheel?</p>
+<h3 id="consideration-6---scaling">
+  Consideration #6 - Scaling
+  <a class="heading-link" href="#consideration-6---scaling">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>What happens if I want to host another site, funny-cat-pics.mattctl.dev?  I could set up a reverse proxy on my existing VPS to forward requests to different backend servers based on the hostname, but that&rsquo;s extra complexity. I could rent another VPS, but it&rsquo;s 2025 - we don&rsquo;t just spin up a VM every time we have a problem.</p>
+<h2 id="cloudflare">
+  Cloudflare
+  <a class="heading-link" href="#cloudflare">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>Cloudflare Tunnels achieve the same result as the ssh port-forwarding method, but for free, and with all of the surrounding complexities abstracted away.</p>
+<p><code>cloudflared</code> runs as a lightweight local daemon and creates a connection (or tunnel) to Cloudflare&rsquo;s infrastructure.</p>
+<p>We then need to set up a &ldquo;Tunnel&rdquo; on the Cloudflare website (or via the API), defining the hostname to expose our site on (blog.mattctl.dev) and the private server to forward requests to.</p>
+<h3 id="dns--tls">
+  DNS &amp; TLS
+  <a class="heading-link" href="#dns--tls">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Cloudflare will then automatically create the appropriate DNS record and generate a TLS cert for blog.mattctl.dev and start routing blog traffic to my blog via the tunnel.</p>
+<h3 id="stay-alive">
+  Stay alive
+  <a class="heading-link" href="#stay-alive">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>cloudflared has built in retry logic to recreate tunnels if they die due to, for instance, a network blip.</p>
+<h3 id="scaling">
+  Scaling
+  <a class="heading-link" href="#scaling">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>If I want to run another site I can just add a new host to the existing tunnel for free. And I no longer have to pay for a VPS at all.</p>
+<h3 id="ddos">
+  DDoS
+  <a class="heading-link" href="#ddos">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>If I fall victim to a DDoS attack it&rsquo;s much more likely Cloudflare (with its huge distributed infrastructure) can mitigate it than my VPS provider. And there are options for blocking certain countries or requiring a captcha which I can enable if necessary.</p>
+<h3 id="complexity">
+  Complexity
+  <a class="heading-link" href="#complexity">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>All I&rsquo;m responsible for now is making sure cloudflared and my webserver stays running. All configuration options are well documented on Cloudflare&rsquo;s website.</p>
+<h1 id="cloudflare-tunnels-on-kubernetes">
+  Cloudflare Tunnels on Kubernetes
+  <a class="heading-link" href="#cloudflare-tunnels-on-kubernetes">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h1>
+<h2 id="recap">
+  Recap
+  <a class="heading-link" href="#recap">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>This blog is served by an nginx Pod running in my cluster. I covered how this is deployed, and how content is kept up to date in my <a href="../hello-world" >last post</a>.</p>
+<p>We can access the blog locally:</p>
+<ol>
+<li>From the <code>blog</code> namespace as http://blog; or</li>
+<li>From elsewhere on the cluster as <a href="http://blog.blog.svc.cluster.local"  class="external-link" target="_blank" rel="noopener">http://blog.blog.svc.cluster.local</a></li>
+</ol>
+<h2 id="exposing-via-cloudflare-tunnels">
+  Exposing via Cloudflare Tunnels
+  <a class="heading-link" href="#exposing-via-cloudflare-tunnels">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<ol>
+<li>
+<p>Use the wizard to create a tunnel on Cloudflare</p>
+</li>
+<li>
+<p>Create a secret with a cloudflare token (created on Cloudflare&rsquo;s site):</p>
+</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cloudflare-token.yml" data-lang="cloudflare-token.yml"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># cloudflare-token.yml</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">apiVersion</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">v1</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">kind</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Secret</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">metadata</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">name</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflare-token</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">namespace</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">blog</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">type</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Opaque</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">stringData</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">token</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">super-secret-token</span><span style="color:#6e7681">
+</span></span></span></code></pre></div><p>Note: Storing credentials in plaintext is not a good idea. Especially if committed to a git repo. Many options exist for managing Kubernetes Secrets securely. I use <a href="https://github.com/bitnami-labs/sealed-secrets"  class="external-link" target="_blank" rel="noopener">SealedSecrets</a> so I can safely manage credentials via GitOps.</p>
+<ol start="3">
+<li>Now deploy cloudflared:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cloudflared.yaml" data-lang="cloudflared.yaml"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># cloudflared.yaml - adapted from example in cloudflare docs: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deployment-guides/kubernetes/#5-create-pods-for-cloudflared</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">apiVersion</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">apps/v1</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">kind</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Deployment</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">metadata</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">name</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflared</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">namespace</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">blog</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">spec</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">replicas</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">2</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">selector</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span><span style="color:#7ee787">matchLabels</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">pod</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflared</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">template</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span><span style="color:#7ee787">metadata</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">labels</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">pod</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflared</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span><span style="color:#7ee787">spec</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">containers</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span>- <span style="color:#7ee787">image</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflare/cloudflared:latest</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span><span style="color:#7ee787">name</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflared</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span><span style="color:#7ee787">env</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- <span style="color:#7ee787">name</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">TUNNEL_TOKEN</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">              </span><span style="color:#7ee787">valueFrom</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">                </span><span style="color:#7ee787">secretKeyRef</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">                  </span><span style="color:#7ee787">name</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflare-token</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">                  </span><span style="color:#7ee787">key</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">token</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span><span style="color:#7ee787">command</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- <span style="color:#a5d6ff">cloudflared</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- <span style="color:#a5d6ff">tunnel</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- --<span style="color:#79c0ff">no</span>-<span style="color:#a5d6ff">autoupdate</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- --<span style="color:#a5d6ff">loglevel</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- <span style="color:#a5d6ff">debug</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- --<span style="color:#a5d6ff">metrics</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- <span style="color:#a5d6ff">0.0.0.0</span>:<span style="color:#a5d6ff">2000</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span>- <span style="color:#a5d6ff">run</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span><span style="color:#7ee787">livenessProbe</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span><span style="color:#7ee787">httpGet</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">              </span><span style="color:#7ee787">path</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">/ready</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">              </span><span style="color:#7ee787">port</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">2000</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span><span style="color:#7ee787">failureThreshold</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">1</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span><span style="color:#7ee787">initialDelaySeconds</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">10</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">            </span><span style="color:#7ee787">periodSeconds</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">10</span><span style="color:#6e7681">
+</span></span></span></code></pre></div><p>This should register and show up as connected on Cloudflare. At this point we should be able to access our site on the internet!</p>
+<p>Note that this doesn&rsquo;t specify which resources will be exposed; that is defined on Cloudflare.</p>
+<ol start="4">
+<li>Add a NetworkPolicy</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cloudflare-egress-policy.yaml" data-lang="cloudflare-egress-policy.yaml"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># cloudflare-egress-policy.yaml</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">apiVersion</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">crd.projectcalico.org/v3</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">kind</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">NetworkPolicy</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">metadata</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">name</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">cloudflared-egress-policy</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">namespace</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">blog</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#7ee787">spec</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">selector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">pod == &#34;cloudflared&#34;</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">types</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span>- <span style="color:#a5d6ff">Egress</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">  </span><span style="color:#7ee787">egress</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span><span style="color:#8b949e;font-style:italic"># allow traffic to pods in &#39;blog&#39; namespace</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span>- <span style="color:#7ee787">action</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Allow</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">destination</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">selector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">all()</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">namespaceSelector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">kubernetes.io/metadata.name == &#34;blog&#34;</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span><span style="color:#8b949e;font-style:italic"># allow egress to internet</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span>- <span style="color:#7ee787">action</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Allow</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">destination</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">nets</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span>- <span style="color:#a5d6ff">0.0.0.0</span><span style="color:#a5d6ff">/0</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span>- ::<span style="color:#a5d6ff">/0</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#8b949e;font-style:italic"># exclude local networks</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">notNets</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span>- <span style="color:#a5d6ff">10.0.0.0</span><span style="color:#a5d6ff">/8</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span>- <span style="color:#a5d6ff">192.168.0.0</span><span style="color:#a5d6ff">/16</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">          </span>- <span style="color:#a5d6ff">172.16.0.0</span><span style="color:#a5d6ff">/12</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span><span style="color:#8b949e;font-style:italic"># allow kube-dns</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span>- <span style="color:#7ee787">action</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Allow</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">protocol</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">UDP</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">destination</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">selector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#39;k8s-app == &#34;kube-dns&#34;&#39;</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">namespaceSelector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#39;kubernetes.io/metadata.name == &#34;kube-system&#34;&#39;</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">ports</span>:<span style="color:#6e7681"> </span>[<span style="color:#a5d6ff">53</span>]<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">    </span>- <span style="color:#7ee787">action</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">Allow</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">protocol</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">TCP</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">      </span><span style="color:#7ee787">destination</span>:<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">selector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#39;k8s-app == &#34;kube-dns&#34;&#39;</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">namespaceSelector</span>:<span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#39;kubernetes.io/metadata.name == &#34;kube-system&#34;&#39;</span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">        </span><span style="color:#7ee787">ports</span>:<span style="color:#6e7681"> </span>[<span style="color:#a5d6ff">53</span>]<span style="color:#6e7681">
+</span></span></span></code></pre></div><p>[The exact way to define a NetworkPolicy may vary based on which Cluster Network Interface (CNI) you use.]</p>
+<p>This adds an extra layer of protection by defining which resources the cloudflared pod can talk to. Here I am restricting it to just pods in the <code>blog</code> namespace, the internet, and the DNS server for the Kubernetes cluster. I explicitly prevent access to everything else on my cluster and local network.</p>
+<p>Theoretically this means if a bad actor got into my Cloudflare account, they wouldn&rsquo;t be able to arbitrarily expose sensitive resources (e.g. the GUI for an internal firewall or hypervisor) simply by reconfiguring the tunnel.</p>
+<p>The cloudflared container image does not include a shell (this minimises the attack surface and is best practice from a security perspective) so to verify the NetworkPolicy is working, we&rsquo;ll need to add a temporary debug container to the pod. This is a super useful trick for troubleshooting on Kubernetes and one it took me far too long to learn! To do this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl debug -n blog -it <span style="color:#ff7b72;font-weight:bold">[</span>cloudflared pod<span style="color:#ff7b72;font-weight:bold">]</span> --image<span style="color:#ff7b72;font-weight:bold">=</span>rockylinux/rockylinux:9.6
+</span></span></code></pre></div><p>Now we have a shell inside the cloudflared pod where we can double check things are as expected:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># should fail</span>
+</span></span><span style="display:flex;"><span>curl https://<span style="color:#ff7b72;font-weight:bold">[</span>firewall-lan-ip<span style="color:#ff7b72;font-weight:bold">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># should succeed</span>
+</span></span><span style="display:flex;"><span>curl http://blog
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># should fail (some service in another namespace)</span>
+</span></span><span style="display:flex;"><span>curl http://<span style="color:#ff7b72;font-weight:bold">[</span>svc<span style="color:#ff7b72;font-weight:bold">]</span>.<span style="color:#ff7b72;font-weight:bold">[</span>ns<span style="color:#ff7b72;font-weight:bold">]</span>.svc.cluster.local
+</span></span></code></pre></div><h2 id="aside-cloudflared-operator">
+  Aside: cloudflared-operator
+  <a class="heading-link" href="#aside-cloudflared-operator">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>The deployment of cloudflared on Kubernetes as described above is quite naive. Configuring the tunnel is still manual. It would be more cloud-native to configure Cloudflare Tunnels automatically by reconciliation with instances of a Kubernetes CR (Custom Resource) i.e. the operator pattern. At least one project exists for this (see <a href="https://github.com/adyanth/cloudflare-operator"  class="external-link" target="_blank" rel="noopener">cloudflared-operator</a>).</p>
+<p>While this looks great, I have chosen not to use it for two reasons:</p>
+<ol>
+<li>An operator feels like overkill for exposing one application. If I need to expose more in the future I will probably revisit it.</li>
+<li>Operators have an inherently higher barrier to entry than the core Kubernetes resources (Service, Deployment, Pod and Secret) used in this guide. I hope this blog is useful to people new to Kubernetes and homelabbing, and I don&rsquo;t want to scare them off with unnecessary complexity.</li>
+</ol>
+<h1 id="summary">
+  Summary
+  <a class="heading-link" href="#summary">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h1>
+<p>My blog running on Kubernetes is exposed to the internet using Cloudflare Tunnels via a cloudflared pod in the same namespace.</p>
+<p>I use a NetworkPolicy to explicitly define which internal resources cloudflared can and cannot talk to.</p>
+<p>This setup means I:</p>
+<ul>
+<li>benefit from Cloudflare&rsquo;s ability to mitigate DDoS attacks</li>
+<li>don&rsquo;t have to spend any money on an internet accessible host such as a VPS</li>
+<li>don&rsquo;t need to manage TLS or DNS</li>
+</ul>
+<p>Do you have any thoughts on this blog? Have you followed this guide in your own homelab? Run into an issue? Would you like to suggest a way to improve this guide? Is there another, better way to expose applications? Feel free to create an issue or start a discussion on <a href="https://github.com/mattctl/blog.mattctl.dev"  class="external-link" target="_blank" rel="noopener">github</a>.</p>
+
+      </div>
+
+
+      <footer>
+        
+
+
+        
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+    2025
+     mattctl 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js" integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+  
+
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+</html>
