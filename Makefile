@@ -13,6 +13,7 @@ build: ${HUGO_BIN} ## build site into public/
 	${HUGO_BIN} build --cleanDestinationDir
 
 serve: ${HUGO_BIN} ## serve site with live-reload
+	git submodule update --init --recursive
 	${HUGO_BIN} serve --cleanDestinationDir
 
 clean: ## Remove generated files (public/ and resources/)
